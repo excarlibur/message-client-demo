@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd">
+
+  <context:property-placeholder ignore-unresolvable="true" location="classpath*:config*.properties" />
+
+  <!-- 配置连接ActiveMQ的ConnectionFactory -->
+  <bean id="connectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+    <!-- MQ地址 -->
+    <property name="brokerURL" value="${mq.brokerURL}" />
+    <!-- 是否异步发送 -->
+    <property name="useAsyncSend" value="true" />
+    <property name="trustAllPackages" value="true"/>
+    <!-- 引用重发机制 -->
+    <property name="redeliveryPolicy" ref="activeMQRedeliveryPolicy" />
+  </bean>
+
+  <!-- 发送消息的目的地 -->
+  <bean id="destination" class="org.apache.activemq.command.ActiveMQQueue">
+    <!-- 设置消息主题的名字 -->
+    <constructor-arg index="0" value="${mq.myQueues}" />
+  </bean>
+
+  <bean id="activeMQRedeliveryPolicy" class="org.apache.activemq.RedeliveryPolicy">
+    <!--是否在每次尝试重新发送失败后,增长这个等待时间 -->
+    <property name="useExponentialBackOff" value="true"></property>
+    <!--重发次数,默认为6次   这里设置为1次 -->
+    <property name="maximumRedeliveries" value="6"></property>
+    <!--重发时间间隔,默认为1秒 -->
+    <property name="initialRedeliveryDelay" value="1000"></property>
+    <!--第一次失败后重新发送之前等待500毫秒,第二次失败再等待500 * 2毫秒,这里的2就是value -->
+    <property name="backOffMultiplier" value="2"></property>
+    <!--最大传送延迟，只在useExponentialBackOff为true时有效（V5.5），假设首次重连间隔为10ms，倍数为2，那么第
+        二次重连时间间隔为 20ms，第三次重连时间间隔为40ms，当重连时间间隔大的最大重连时间间隔时，以后每次重连时间间隔都为最大重连时间间隔。 -->
+    <property name="maximumRedeliveryDelay" value="1000"></property>
+  </bean>
+
+  <!--消息消费者监听类 -->
+  <bean id="myMessageListener" class="com.quanwei.listeners.MessageReceiver" />
+
+  <!--监听容器的配置 -->
+  <bean id="myListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+    <property name="connectionFactory" ref="connectionFactory" />
+    <!--消息目的地 -->
+    <property name="destination" ref="destination" />
+    <!--消息监听类 -->
+    <property name="messageListener" ref="myMessageListener" />
+    <!-- 发布订阅模式 -->
+    <property name="pubSubDomain" value="true" />
+    <!-- 消息持久化值设置为true -->
+    <!--<property name="subscriptionDurable" value="true" />-->
+    <!--消息接收超时 -->
+    <property name="receiveTimeout" value="10000" />
+  </bean>
+</beans>
