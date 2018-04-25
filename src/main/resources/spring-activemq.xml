@@ -41,7 +41,7 @@
   </bean>
 
   <!--消息消费者监听类 -->
-  <bean id="myMessageListener" class="com.quanwei.listeners.MessageReceiver" />
+  <bean id="myMessageListener" class="com.quanwei.listeners.MyMessageReceiver" />
 
   <!--监听容器的配置 -->
   <bean id="myListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
